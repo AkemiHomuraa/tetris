@@ -1,0 +1,494 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Tetris</title>
+</head>
+<style type="text/css">
+html,body{
+    height: 100%;
+    width: 100;
+    margin:0;
+    padding: 0;
+}
+.main{
+    height: 100%;
+    width: 100%;
+}
+.leftDiv{
+    /*height: 99%;
+    width: 80%;*/
+    height: 400px;
+    width:200px;
+    border:3px solid black;
+    display:inline-block;
+}
+.rigthDiv{
+    width: 18%;
+    display:inline-block;
+    vertical-align: top;
+    font-family: tmb;  
+    font-size:14pt; 
+    color:green;"
+}
+</style>
+<body>
+    <div class="main">
+        <div class="leftDiv"><canvas id="canvas"></canvas></div>
+        <div class="rigthDiv">
+            <span>得分:</span><span id="score">0</span> 
+        </div>
+    </div>
+</body>
+<script>
+    /*
+        方块工厂类
+     */
+    function Cube(cubeCoor,x,y){
+        this.x = x;
+        this.y = y;
+        this.cubeY = [];
+        this.cubeX = [];
+        this.cubeCoor = cubeCoor;
+        this.color = "rgba(204,0,0,0.5)";
+        this.isBotton;
+    }
+
+    Cube.prototype.draw = function () {
+        cnt.fillStyle = this.color;
+        
+        for(var i = 0; i < 4; i++){
+            //根据方块的相对位置和初始xy位置画出一组方块
+            
+            this.cubeY[i] = (this.cubeCoor[i][1] * 10) + this.y;
+            this.cubeX[i] = (this.cubeCoor[i][0] * 10) + this.x;
+
+            cnt.fillRect(this.cubeX[i], this.cubeY[i],10,10);
+        }
+        
+    }
+    
+    //方块向下移动
+    Cube.prototype.move = function () {
+        for(var i in this.cubeY){
+            //判断是否超出下方
+            if ( (this.cubeY[i] + 10) >= 400 ) {
+                this.isBotton = true;
+            }
+            //判断下面是否碰到其他方块
+            for(var j in bottonCubes){
+                if (this.cubeX[i] == bottonCubes[j][0]) {
+                    if( (this.cubeY[i] + 10) == bottonCubes[j][1] ){
+                        this.isBotton = true;
+                    }
+                }
+
+            }
+        }
+
+        if (this.isBotton == true) {
+            var thiscube = [];
+            for(var i in this.cubeY){
+                thiscube[i] = [this.cubeX[i], this.cubeY[i]];
+            }
+            //console.log(lock);
+            if (lock === 0) {
+                lock = 1;
+                addTobottonCubes(thiscube);
+            }else{
+                return false;
+            }
+            return false;
+        }else{
+            this.y += 10;
+        }
+
+        //console.log(this.y);
+        initBG();
+        this.draw();
+    }
+
+    //向右
+    Cube.prototype.moveRgiht = function (){
+        var canMove = false;
+        for(var i in this.cubeX){
+            //当已有方块在下方时
+            if(bottonCubes.length != 0){
+                for(var j in bottonCubes){
+
+                    if (this.cubeY[i] != bottonCubes[j][1]) {
+                        if ( (this.cubeX[i] + 10) >= 200)  {
+                            return false;
+                        }else{
+                            canMove = true;
+                        }
+                    }else{
+                        if ( (this.cubeX[i] + 10) == bottonCubes[j][0] ) {
+                            return false;
+                        }else{
+                            canMove = true;
+                        }
+                    }
+
+                }
+            }else{
+                if( (this.cubeX[i] + 10) >= 200 ){
+                    return false;
+                }else{
+                    canMove = true;
+                }
+            }
+
+        }
+
+        if (canMove) {
+            this.x += 10;
+            initBG();
+            this.draw();
+        }
+    }
+
+    //向左
+    Cube.prototype.moveLeft = function (){
+        var canMove = false;
+        for(var i in this.cubeX){
+            if(bottonCubes.length != 0){
+                for(var j in bottonCubes){
+
+                    if (this.cubeY[i] != bottonCubes[j][1]) {
+                        if ( (this.cubeX[i] - 10) < 0)  {
+                            return false;
+                        }else{
+                            canMove = true;
+                        }
+                    }else{
+                        if ( (this.cubeX[i] - 10) == bottonCubes[j][0] ) {
+                            return false;
+                        }else{
+                            canMove = true;
+                        }
+                    }
+
+                }
+            }else{
+                if( (this.cubeX[i] - 10) < 0 ){
+                    return false;
+                }else{
+                    canMove = true;
+                }
+            }
+
+        }
+
+        if (canMove) {
+            this.x = this.x - 10;
+            initBG();
+            this.draw();
+        }
+    }
+
+    Cube.prototype.moveRotate = function (){
+        var canMove = false;
+
+        for(var i in this.cubeCoor){
+            var x1 = this.cubeCoor[i][0];
+            var y1 = this.cubeCoor[i][1];
+            var x2 = y1;
+            var y2 = -x1;
+            
+            var nowPointX = 0;
+            var nowPointY = 0;
+            //旋转公式  x1,y1 x2,y2   x2 = y1  y2 = -x1
+            nowPointX = (x2 * 10) + this.x;
+            nowPointY = (y2 * 10) + this.y;
+            //console.log(nowPointX);
+
+            if (nowPointX < 0 || nowPointY > 400 || nowPointX > 200 || nowPointY < 0) {
+                return false;
+            }
+
+            for(var j in bottonCubes){
+                if (nowPointX == bottonCubes[j][0] && nowPointY == bottonCubes[j][1]) {
+                    return false;
+                }
+                
+            }
+            canMove = true;
+        }
+
+        if (canMove) {
+            for(var j in this.cubeCoor){
+                var tmpX = this.cubeCoor[j][0];
+                var tmpY = this.cubeCoor[j][1];
+
+                this.cubeCoor[j][0] = tmpY;
+                this.cubeCoor[j][1] = -tmpX;
+            }
+
+            console.log('change');
+            initBG();
+            this.draw();
+        }
+    }
+
+    Cube.prototype.moveDown = function (){
+        //initBG();
+        this.move();
+        /*for(var i in this.cubeY){
+            if ( (this.cubeY[i] + 10) >= 400 ) {
+                this.isBotton = true;
+            }
+
+            for(var j in bottonCubes){
+
+                if (this.cubeX[i] == bottonCubes[j][0]) {
+                    if( (this.cubeY[i] + 10) == bottonCubes[j][1] ){
+                        this.isBotton = true;
+                    }
+                }
+
+            }
+        }
+
+        if (this.isBotton == true) {
+            var thiscube = [];
+            for(var i in this.cubeY){
+                thiscube[i] = [this.cubeX[i], this.cubeY[i]];
+            }
+
+            addTobottonCubes(thiscube);
+
+            return false;
+        }else{
+            this.y += 10;
+        }
+
+        //console.log(this.y);
+        initBG();
+        this.draw();*/
+    }
+    /*************************************************************************************/
+
+
+    /*var cube1 = [[0,0],[0,1],[1,1],[2,1]];  // |--
+    var cube2 = [[0,0],[1,0],[2,0],[0,1]];  // |__
+    var cube3 = [[0,0],[1,0],[1,1],[2,1]];  //--__
+    var cube4 = [[1,0],[2,0],[0,1],[1,1]];  //__--
+    var cube5 = [[0,0],[0,1],[1,1],[1,0]];  //田
+    var cube6 = [[0,1],[1,1],[1,0],[2,1]];  //凸
+    var cube7 = [[0,0],[1,0],[2,0],[3,0]];  //口口口口*/
+    var cube1 = [[0,0],[0,1],[1,1],[2,1]];  // |--
+    var cube2 = [[0,0],[1,0],[2,0],[0,1]];  // |__
+    var cube3 = [[0,0],[1,0],[1,1],[2,1]];  //--__
+    var cube4 = [[1,0],[2,0],[0,1],[1,1]];  //__--
+    var cube5 = [[0,0],[0,1],[1,1],[1,0]];  //田
+    var cube6 = [[0,1],[1,1],[1,0],[2,1]];  //凸
+    var cube7 = [[0,0],[1,0],[2,0],[3,0]];  //口口口口
+
+    var lock = 0;
+
+
+
+    var canvas = document.getElementById('canvas'),
+    cnt = canvas.getContext('2d'),
+    bgxNum = 20,
+    bgyNum = 40,
+    cubW = 10,
+    bgLineColor = '#DBDBDB',
+    NCubeNum = 0,
+    staticCube = [],
+    cubes = [],
+    bottonCubes = [],
+    WIDTH,
+    HEIGHT,
+    myinter;
+    
+
+    setCanvasSize();
+    init();
+
+    function setCanvasSize() {
+        WIDTH = cubW * bgxNum;
+        HEIGHT = cubW * bgyNum;
+
+        canvas.setAttribute("width", WIDTH);
+        canvas.setAttribute("height", HEIGHT);
+    }
+
+
+    function init() {
+
+        initBG();
+        createCube(0,0);
+        animate();
+        myinter=setInterval('animate()',200);
+    }
+
+    //画背景
+    function initBG (){
+        cnt.clearRect(0, 0, WIDTH, HEIGHT);
+        cnt.lineWidth = 1;
+        cnt.strokeStyle = '#DDDDDD';
+        for(var i = 0; i < bgxNum; i++){
+            cnt.moveTo(cubW * i,0);
+            cnt.lineTo(cubW * i, cubW * bgyNum);
+        }
+        cnt.stroke();
+        for(var j = 0; j < bgyNum; j++){
+            cnt.moveTo(0,cubW * j);
+            cnt.lineTo(cubW * bgxNum, cubW * j);
+        }
+        cnt.stroke();
+        drawStaticCube();
+
+    }
+
+    function animate(){
+        initBG();
+
+        for(var i in cubes){
+            //console.log(i);
+            if(cubes[i].move() == false){
+                cubes.splice(i,1);
+                lock = 0;
+                createCube(0,0);
+            }
+        }
+        
+        //requestAnimationFrame(animate);
+    }
+
+
+    function createCube(x,y){
+        var cubeID = Math.floor(Math.random()*7 + 1);
+        var cubeType = 'cube' + cubeID; //eval(cubeType)
+        //var cubeType = 'cube7';
+        var cubeCoor = eval(cubeType);
+        //console.log(cubeCoor);
+        NCubeNum = NCubeNum + 1;
+        cubes[NCubeNum] = new Cube(cubeCoor,x,y);
+
+    }
+
+    function addTobottonCubes(cube){
+        bottonCubes = bottonCubes.concat(cube);
+        checkColisFull();
+        checkFull();
+    }
+
+    function checkColisFull(){
+        var tmpKey = 0;
+        for(var i in bottonCubes){
+            var tmpColNum = 0;
+            for (var j in bottonCubes){
+                if(bottonCubes[i][1] == bottonCubes[j][1]){
+                    tmpColNum += 1;
+                }
+            }
+            
+            if(tmpColNum >= 20){
+                tmpKey = bottonCubes[i][1]
+                for(var z in bottonCubes){
+                    if(tmpKey == bottonCubes[z][1]){
+                        delete bottonCubes[z];
+                        //bottonCubes.splice(z,1);
+                    }
+                    
+                }
+
+                staticCubeDown(tmpKey);
+
+            }
+        }
+    }
+
+    function staticCubeDown(Ypoint){
+        console.log(Ypoint);
+        for(var i in bottonCubes){
+            if (bottonCubes[i][1] < Ypoint) {
+                bottonCubes[i][1] = bottonCubes[i][1] + 10;
+            }
+        }
+    }
+
+    //检测是否到顶(游戏结束)
+    function checkFull(){
+        /*for (var i = 0; i < 20; i++){
+            for(var j in bottonCubes){
+                //console.log(bottonCubes[j][1]);
+                if (bottonCubes[j][1] <= 10 ) {
+                    console.log('game over...');
+                    clearInterval(myinter);  
+                    return; 
+                }
+            }
+        }*/
+        for(var i in bottonCubes){
+            if (bottonCubes[i][1] <= 10 ) {
+                console.log('game over...');
+                clearInterval(myinter);  
+                return; 
+            }
+        }
+    }
+
+    function drawStaticCube(cubeCoor){
+        for(var i in bottonCubes){
+            cnt.fillStyle = "rgba(204,0,0,0.5)";
+            //var cubex = [];
+            //var cubey = [];
+        
+                //cubex[i] = (bottonCubes[i][0]);
+                //cubey[i] = (bottonCubes[i][1]);
+            cnt.fillRect(bottonCubes[i][0], bottonCubes[i][1],10,10);
+        }
+
+    }
+
+    function moveRight(){
+        for(var i in cubes){
+            cubes[i].moveRgiht();
+        }
+    }
+
+    function moveLeft(){
+        for(var i in cubes){
+            cubes[i].moveLeft();
+        }
+    }
+
+    function moverotate(){
+        for(var i in cubes){
+            cubes[i].moveRotate();
+        }
+    }
+
+    function movedown(){
+        for(var i in cubes){
+            cubes[i].moveDown();
+        }
+    }
+
+    window.onkeydown = function (evt)  
+    {  
+       switch(evt.keyCode)  
+       {  
+           case 37: //左  
+               moveLeft();  
+               break;  
+           case 38: //上  
+               moverotate();  
+               break;  
+           case 39: //右  
+               moveRight();  
+               break;  
+           case 40: //下  
+               movedown();  
+               break;  
+       }  
+    }  
+
+
+
+</script>
+</html>
