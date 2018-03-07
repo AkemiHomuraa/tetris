@@ -59,10 +59,8 @@ html,body{
         
         for(var i = 0; i < 4; i++){
             //根据方块的相对位置和初始xy位置画出一组方块
-            
             this.cubeY[i] = (this.cubeCoor[i][1] * 10) + this.y;
             this.cubeX[i] = (this.cubeCoor[i][0] * 10) + this.x;
-
             cnt.fillRect(this.cubeX[i], this.cubeY[i],10,10);
         }
         
@@ -71,7 +69,7 @@ html,body{
     //方块向下移动
     Cube.prototype.move = function () {
         for(var i in this.cubeY){
-            //判断是否超出下方
+            //判断是否到了底部
             if ( (this.cubeY[i] + 10) >= 400 ) {
                 this.isBotton = true;
             }
@@ -85,13 +83,13 @@ html,body{
 
             }
         }
-
+        //如果到了底部
         if (this.isBotton == true) {
             var thiscube = [];
             for(var i in this.cubeY){
                 thiscube[i] = [this.cubeX[i], this.cubeY[i]];
             }
-            //console.log(lock);
+            //锁住避免重复加入到静态方块数组
             if (lock === 0) {
                 lock = 1;
                 addTobottonCubes(thiscube);
@@ -103,7 +101,6 @@ html,body{
             this.y += 10;
         }
 
-        //console.log(this.y);
         initBG();
         this.draw();
     }
@@ -112,17 +109,20 @@ html,body{
     Cube.prototype.moveRgiht = function (){
         var canMove = false;
         for(var i in this.cubeX){
-            //当已有方块在下方时
+            //如果是第一个方块,底部没有有静态方块的话
             if(bottonCubes.length != 0){
-                for(var j in bottonCubes){
 
+                for(var j in bottonCubes){
+                    //判断四个小方块Y轴是否碰到其他方块
                     if (this.cubeY[i] != bottonCubes[j][1]) {
+                        //判断是到了最右边
                         if ( (this.cubeX[i] + 10) >= 200)  {
                             return false;
                         }else{
                             canMove = true;
                         }
                     }else{
+                        //判断右边是否有方块
                         if ( (this.cubeX[i] + 10) == bottonCubes[j][0] ) {
                             return false;
                         }else{
@@ -132,6 +132,7 @@ html,body{
 
                 }
             }else{
+                //判断是否到最右边
                 if( (this.cubeX[i] + 10) >= 200 ){
                     return false;
                 }else{
@@ -152,16 +153,19 @@ html,body{
     Cube.prototype.moveLeft = function (){
         var canMove = false;
         for(var i in this.cubeX){
+            //是否有静态方块
             if(bottonCubes.length != 0){
                 for(var j in bottonCubes){
-
+                    //移动后是否重叠
                     if (this.cubeY[i] != bottonCubes[j][1]) {
+                        //最左
                         if ( (this.cubeX[i] - 10) < 0)  {
                             return false;
                         }else{
                             canMove = true;
                         }
                     }else{
+                        //碰撞
                         if ( (this.cubeX[i] - 10) == bottonCubes[j][0] ) {
                             return false;
                         }else{
@@ -191,8 +195,10 @@ html,body{
         var canMove = false;
 
         for(var i in this.cubeCoor){
+            //获取初始坐标
             var x1 = this.cubeCoor[i][0];
             var y1 = this.cubeCoor[i][1];
+            //变换
             var x2 = y1;
             var y2 = -x1;
             
@@ -201,13 +207,13 @@ html,body{
             //旋转公式  x1,y1 x2,y2   x2 = y1  y2 = -x1
             nowPointX = (x2 * 10) + this.x;
             nowPointY = (y2 * 10) + this.y;
-            //console.log(nowPointX);
-
+            //判断变换后是否超出
             if (nowPointX < 0 || nowPointY > 400 || nowPointX > 200 || nowPointY < 0) {
                 return false;
             }
 
             for(var j in bottonCubes){
+                //判断变换后是否重叠
                 if (nowPointX == bottonCubes[j][0] && nowPointY == bottonCubes[j][1]) {
                     return false;
                 }
@@ -225,7 +231,6 @@ html,body{
                 this.cubeCoor[j][1] = -tmpX;
             }
 
-            console.log('change');
             initBG();
             this.draw();
         }
@@ -307,6 +312,7 @@ html,body{
     setCanvasSize();
     init();
 
+    //设置长宽
     function setCanvasSize() {
         WIDTH = cubW * bgxNum;
         HEIGHT = cubW * bgyNum;
@@ -315,7 +321,7 @@ html,body{
         canvas.setAttribute("height", HEIGHT);
     }
 
-
+    //初始化
     function init() {
 
         initBG();
@@ -342,7 +348,7 @@ html,body{
         drawStaticCube();
 
     }
-
+    //动画调用
     function animate(){
         initBG();
 
@@ -358,24 +364,25 @@ html,body{
         //requestAnimationFrame(animate);
     }
 
-
+    //创建方块
     function createCube(x,y){
         var cubeID = Math.floor(Math.random()*7 + 1);
-        var cubeType = 'cube' + cubeID; //eval(cubeType)
+        var cubeType = 'cube' + cubeID;
         //var cubeType = 'cube7';
         var cubeCoor = eval(cubeType);
-        //console.log(cubeCoor);
         NCubeNum = NCubeNum + 1;
         cubes[NCubeNum] = new Cube(cubeCoor,x,y);
 
     }
 
+    //添加到静态方块
     function addTobottonCubes(cube){
         bottonCubes = bottonCubes.concat(cube);
         checkColisFull();
         checkFull();
     }
 
+    //检测行是否满足消除条件
     function checkColisFull(){
         var tmpKey = 0;
         for(var i in bottonCubes){
@@ -402,6 +409,7 @@ html,body{
         }
     }
 
+    //消除后方块下降
     function staticCubeDown(Ypoint){
         console.log(Ypoint);
         for(var i in bottonCubes){
@@ -432,14 +440,11 @@ html,body{
         }
     }
 
+    //画出静态方块
     function drawStaticCube(cubeCoor){
         for(var i in bottonCubes){
             cnt.fillStyle = "rgba(204,0,0,0.5)";
-            //var cubex = [];
-            //var cubey = [];
-        
-                //cubex[i] = (bottonCubes[i][0]);
-                //cubey[i] = (bottonCubes[i][1]);
+
             cnt.fillRect(bottonCubes[i][0], bottonCubes[i][1],10,10);
         }
 
