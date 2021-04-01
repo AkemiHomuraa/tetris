@@ -12,6 +12,9 @@ html,body{
     padding: 0;
 }
 .main{
+    display: flex;
+    align-items:center;
+    justify-content:center;
     height: 100%;
     width: 100%;
 }
@@ -31,12 +34,16 @@ html,body{
     font-size:14pt; 
     color:green;"
 }
+.score{
+    border: 0;
+    font-size: 14pt;
+}
 </style>
 <body>
     <div class="main">
         <div class="leftDiv"><canvas id="canvas"></canvas></div>
         <div class="rigthDiv">
-            <span>得分:</span><span id="score">0</span> 
+            <span>得分:</span><input class="score" id="score" value='0' />
         </div>
     </div>
 </body>
@@ -398,6 +405,10 @@ html,body{
                 for(var z in bottonCubes){
                     if(tmpKey == bottonCubes[z][1]){
                         delete bottonCubes[z];
+                        let x = document.getElementById("score").value;
+                        x = parseInt(x) + 1;
+                        document.getElementById("score").value = x;
+                        console.log(x);
                         //bottonCubes.splice(z,1);
                     }
                     
